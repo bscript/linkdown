@@ -1,0 +1,55 @@
+version: "3.3"
+
+services:
+
+  flask:
+    build: ./app
+    container_name: flask
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+    restart: always
+    environment:
+      APP_NAME: LinkDown
+      FLASK_ENV: development
+      DB_HOST: &postgres-host postgres
+      DB_DATABASE: &postgres-db-name flaskdb
+      DB_USERNAME: root
+      DB_PASSWORD: &postgres-db-password root
+      DB_PORT: 3306 
+    expose:
+      - 8080
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - ./app:/app:rw
+      - home-dir:/home/user
+    depends_on: 
+      - postgres
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    working_dir: /usr/share/nginx/html
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app:ro
+
+  postgres:
+    image: postgres
+    environment: 
+      POSTGRES_PASSWORD: *postgres-db-password
+      POSTGRES_USER: root
+      POSTGRES_DB: *postgres-db-name
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+    ports: 
+      - 3306:3306
+      
+  adminer:
+    image: adminer
+    ports:
+      - '4082:8080'
+volumes:
+  home-dir:
+  postgres_data:
